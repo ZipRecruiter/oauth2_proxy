@@ -420,13 +420,26 @@ func (p *OAuthProxy) ManualSignIn(rw http.ResponseWriter, req *http.Request) (st
 }
 
 func (p *OAuthProxy) GetRedirect(req *http.Request) (redirect string, err error) {
+	if p.SkipProviderButton {
+		log.Printf("GetRedirect: skip provider button is set; will set redirect to %q", req.RequestURI)
+		redirect = req.RequestURI
+		return
+	}
+
 	err = req.ParseForm()
 	if err != nil {
+		log.Printf("GetRedirect: could not parse form: %v", err)
 		return
 	}
 
 	redirect = req.Form.Get("rd")
-	if redirect == "" || !strings.HasPrefix(redirect, "/") || strings.HasPrefix(redirect, "//") {
+	log.Printf("GetRedirect: retrieved 'rd' from request")
+	if req.Header.Get("X-Auth-Request-Redirect") != "" {
+		log.Printf("GetRedirect: retrieved X-Auth-Request-Redirect from header")
+		redirect = req.Header.Get("X-Auth-Request-Redirect")
+	}
+	if redirect == "" || !strings.HasPrefix(redirect, "/") || strings.HasPrefix(redirect, "//") || redirect == p.SignInPath {
+		log.Printf("GetRedirect: redirect %q will be overridden to %q", redirect, "/")
 		redirect = "/"
 	}
 
