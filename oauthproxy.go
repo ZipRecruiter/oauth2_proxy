@@ -374,7 +374,16 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	p.ClearSessionCookie(rw, req)
 	rw.WriteHeader(code)
 
+	err := req.ParseForm()
+	if err != nil {
+		log.Printf("SignInPage: could not parse form: %v", err)
+		return
+	}
+
 	redirect_url := req.URL.RequestURI()
+	if rd := req.Form.Get("rd"); rd != "" {
+		redirect_url = rd
+	}
 	if req.Header.Get("X-Auth-Request-Redirect") != "" {
 		redirect_url = req.Header.Get("X-Auth-Request-Redirect")
 	}
